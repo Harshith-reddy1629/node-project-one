@@ -40,11 +40,52 @@ const initializeDbAndServer = async () => {
     }
   };
   
-  initializeDbAndServer(); 
+  initializeDbAndServer();  
 
-  app.post("/users/", async (request, response) => {
+// @User registration
 
-    const { username, name, password ,email } = request.body;
+// @PasswordValidation
+  const PasswordValidation =(request, response, next)=>{
+    const { password} = request.body 
+    if (password.length < 8 ){
+
+      response.status(400).send({
+          errMsg: 'Password should have minimum 8 characters'
+        })
+
+    } else{
+
+          next();
+    }
+  } 
+
+// @MailValidation
+  const MailValidation = async (request,response,next)=>{ 
+
+    const {email} = request.body;
+
+    const selectUserQuery = `SELECT * FROM users WHERE email = '${email}'`;
+
+    const dbUser = await database.get(selectUserQuery);
+
+    if (dbUser === undefined){
+
+      next()
+
+    }else{
+      response.status(400).send(
+        {
+          errMsg:'email already exists'
+        }
+      )
+    }
+
+  }
+
+// @user Post METHOD
+  app.post("/users/", PasswordValidation , MailValidation , async (request, response) => {
+
+    const { username, name, password ,email } = request.body; 
 
     const hashedPassword = await bcrypt.hash(request.body.password, 10);
     const selectUserQuery = `SELECT * FROM users WHERE username = '${username}'`;
@@ -64,11 +105,14 @@ const initializeDbAndServer = async () => {
       const newUserId = dbResponse.lastID;
       response.send(dbResponse);
     } else {
-      response.status = 400;
-      response.send({errMsg:"User already exists"});
+      response.status(400).send({errMsg:"User already exists with this username"});
     }
   });
 
+
+// @user delete
+
+// @user delete method
 app.delete( "/users/:id/" , async (request,response) =>{ 
 
   const { id } = request.params
@@ -85,8 +129,11 @@ response.send('done')
  
 } )
 
+// PROJECTS DB
 
-app.post('/projects/onlyadmin/canpost/' , async ( req,res ) =>{
+// @project post method
+// Only Admin
+app.post('/projects/onlyadmin/canpost/' , async ( req , res ) =>{  
 
 const {projectImg,projectName,description,projectLink} =  req.body  
 
@@ -101,10 +148,12 @@ VALUES (
 
 const runQ = await database.run( QueryToRun)
 
-res.send( 'okay' )
+res.send({ Message:'Added'} )
 
 } ) 
 
+
+// @projects get method
 app.get('/projects/', async (req,res)=>{
   const QueryToRun = `
   SELECT * FROM projects_table;
