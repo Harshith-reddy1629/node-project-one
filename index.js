@@ -44,6 +44,18 @@ const initializeDbAndServer = async () => {
 
 // @User registration
 
+// @values Validation 
+const inputValuesValidation = (request,response,next) =>{
+  const { username, name, password ,email } = request.body; 
+
+  if (!username || !name || !password || !email ){
+    response.status(400).send({errMsg:"All Fields are mandatory"})
+  }else{
+    next()
+  }
+
+}
+
 // @PasswordValidation
   const PasswordValidation =(request, response, next)=>{
     const { password} = request.body 
@@ -54,7 +66,6 @@ const initializeDbAndServer = async () => {
         })
 
     } else{
-
           next();
     }
   } 
@@ -73,24 +84,30 @@ const initializeDbAndServer = async () => {
       next()
 
     }else{
+
       response.status(400).send(
         {
           errMsg:'email already exists'
         }
       )
+
     }
 
   }
 
 // @user Post METHOD
-  app.post("/users/", PasswordValidation , MailValidation , async (request, response) => {
+  app.post("/users/",inputValuesValidation , PasswordValidation , MailValidation , async (request, response) => {
 
     const { username, name, password ,email } = request.body; 
 
     const hashedPassword = await bcrypt.hash(request.body.password, 10);
+
     const selectUserQuery = `SELECT * FROM users WHERE username = '${username}'`;
+
     const dbUser = await database.get(selectUserQuery);
+
     if (dbUser === undefined) {
+
       const createUserQuery = `
         INSERT INTO 
           users (username, name, password, email) 
@@ -101,13 +118,28 @@ const initializeDbAndServer = async () => {
             '${hashedPassword}', 
             '${email}'
           )`;
+
       const dbResponse = await database.run(createUserQuery);
+
       const newUserId = dbResponse.lastID;
+
       response.send(dbResponse);
     } else {
       response.status(400).send({errMsg:"User already exists with this username"});
     }
   });
+// @user Details 
+
+app.get('/users/onlyadmin/get/',async (req,res) =>{
+
+  const Q = `
+  SELECT * FROM users;` 
+
+  const RunQ = await database.all(Q)  
+
+  res.status(200).send(RunQ)
+
+} )
 
 
 // @user delete
