@@ -101,7 +101,8 @@ const inputValuesValidation = (request,response,next) =>{
 
 }
 
-// @PasswordValidation
+// @PasswordValidation 
+// check password
   const PasswordValidation =(request, response, next)=>{
     const { password} = request.body 
     if (password.length < 8 ){
@@ -123,8 +124,6 @@ const inputValuesValidation = (request,response,next) =>{
 
     const isAnyObjectWithThisMail = await usersData.findOne({email})
     
-
-
     if ( !isAnyObjectWithThisMail ){
 
       next()
