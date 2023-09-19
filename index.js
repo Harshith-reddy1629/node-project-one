@@ -8,11 +8,18 @@ const sqlite3 = require("sqlite3");
 
 const path = require("path");
 
+const dotenv = require("dotenv").config();
+
 const bcrypt = require("bcrypt");
 
 const jwt = require("jsonwebtoken");
 
 const databasePath = path.join(__dirname, "sample.db");
+
+const mongoose = require("mongoose"); 
+const { ObjectId } = require("mongodb");
+
+
 
 const app = express();
 
@@ -21,6 +28,44 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 8001;
+
+
+const mongoConnectionDb = async ()=>{
+  try {
+    const connect = await mongoose.connect(process.env.CONNECTION_STRING) ;
+    console.log("database",connect.connections.name)
+  } catch (error) {
+    console.log(error)
+    process.exit(1)
+  }
+}
+
+
+mongoConnectionDb();
+
+const usersSchema = mongoose.Schema({
+  name:{
+    type:String,
+    required:[true,"Please add the name"],
+  },
+  email:{
+    type:String,
+    required:[true,"Please add the email address"]
+  },
+  username:{
+    type:String,
+    required:[true,"Please add the username"]
+  },
+  password:{
+    type:String,
+    required:[true,"Please add the password"]
+  },
+
+},{
+  timestamps: true,
+})
+
+const usersData = mongoose.model("users",usersSchema)
 
 let database = null;
 const initializeDbAndServer = async () => {
@@ -75,11 +120,11 @@ const inputValuesValidation = (request,response,next) =>{
 
     const {email} = request.body;
 
-    const selectUserQuery = `SELECT * FROM users WHERE email = '${email}'`;
+    const isAnyObjectWithThisMail = await usersData.findOne({email})
+    
+    // console.log(!isAnyObjectWithThisMail)
 
-    const dbUser = await database.get(selectUserQuery);
-
-    if (dbUser === undefined){
+    if ( !isAnyObjectWithThisMail ){
 
       next()
 
@@ -95,102 +140,103 @@ const inputValuesValidation = (request,response,next) =>{
 
   }
 
-// @user Post METHOD
-  app.post("/users/",inputValuesValidation , PasswordValidation , MailValidation , async (request, response) => {
+  app.get('/register/',async (req, res)=>{
+    const Q = await usersData.find();
+    res.status(200).send(Q)
+  })
+  
+  app.post('/register/',inputValuesValidation,PasswordValidation,MailValidation,async(req,res)=>{
 
-    const { username, name, password ,email } = request.body; 
+    const {name,username,password,email} = req.body 
 
-    const hashedPassword = await bcrypt.hash(request.body.password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const selectUserQuery = `SELECT * FROM users WHERE username = '${username}'`;
+    const checkUsername = await usersData.findOne({username}) 
 
-    const dbUser = await database.get(selectUserQuery);
+  if (!checkUsername){
 
+    const Q = await usersData.create({
+      name,
+      username,
+      password:hashedPassword,
+      email
+    })
+  
+    res.status(201).send(Q)
+
+  }else{
+
+      res.status(400).send(checkUsername)
+
+    }
+  })
+
+  app.get('/register/:id/' , async (req,res) =>{
+
+    const {id} = req.params 
+
+    try {
+      
+      const Q = await usersData.findById(id) 
+
+      if(!Q){
+
+        res.status(404).send({errMsg:"USER Not Found"})
+
+      }
+      else{
+
+        res.status(200).send(Q)
+
+      }
+    }
+    catch (error) {
+     
+      res.status(404).send({
+      errMsg:`${error}`
+     })
+    }
+  } )
+
+  app.delete('/register/:id', async ( req , res ) => {
+    const {id} = req.params
+    try {
+      const searchIdToDel = await usersData.findByIdAndDelete(id)  
+      if (!searchIdToDel){
+        res.status(404).send({
+        errMsg:"No User"
+        })
+      }else{
+        res.status(200).send(searchIdToDel)
+      }
+    } catch (error) {
+      res.status(400).send(error)
+    }
+  } )
+
+  app.post("/login/", async (request, response) => {
+    const { username, password } = request.body;
+    try {
+      
+    
+    const dbUser = await usersData.findOne( {username} )
+   
     if (dbUser === undefined) {
-
-      const createUserQuery = `
-        INSERT INTO 
-          users (username, name, password, email) 
-        VALUES 
-          (
-            '${username}', 
-            '${name}',
-            '${hashedPassword}', 
-            '${email}'
-          )`;
-
-      const dbResponse = await database.run(createUserQuery);
-
-      const newUserId = dbResponse.lastID;
-
-      response.send(dbResponse);
+      response.status(400);
+      response.send("Invalid User");
     } else {
-      response.status(400).send({errMsg:"User already exists with this username"});
+      const isPasswordMatched = await bcrypt.compare(password, dbUser.password);
+      if (isPasswordMatched === true) {
+        const payload = {
+          username: username,
+        };
+        const jwtToken = jwt.sign(payload, "MY_SECRET_TOKEN");
+        response.send({ jwtToken });
+      } else {
+        response.status(400);
+        response.send("Invalid Password");
+      }
+    }} catch (error) {
+      response.status(400).send({errMsg:error})
     }
   });
-// @user Details 
-
-app.get('/users/onlyadmin/get/',async (req,res) =>{
-
-  const Q = `
-  SELECT * FROM users;` 
-
-  const RunQ = await database.all(Q)  
-
-  res.status(200).send(RunQ)
-
-} )
-
-
-// @user delete
-
-// @user delete method
-app.delete( "/users/:id/" , async (request,response) =>{ 
-
-  const { id } = request.params
-
-const Q = `
-DELETE FROM
-users
-WHERE
-id =${id};`; 
-
-await database.run(Q) 
-
-response.send('done')
- 
-} )
-
-// PROJECTS DB
-
-// @project post method
-// Only Admin
-app.post('/projects/onlyadmin/canpost/' , async ( req , res ) =>{  
-
-const {projectImg,projectName,description,projectLink} =  req.body  
-
-const QueryToRun = `INSERT INTO 
-projects_table ( projectImg ,projectName,description,projectLink )
-VALUES (
-'${projectImg}',
-'${projectName}',
-'${description}',
- '${projectLink}'
-);`;
-
-const runQ = await database.run( QueryToRun)
-
-res.send({ Message:'Added'} )
-
-} ) 
-
-
-// @projects get method
-app.get('/projects/', async (req,res)=>{
-  const QueryToRun = `
-  SELECT * FROM projects_table;
-  `
-  const runQ = await database.all(QueryToRun) 
-
-  res.send( runQ )
-})
