@@ -46,7 +46,7 @@ mongoConnectionDb();
 const usersSchema = mongoose.Schema({
   name:{
     type:String,
-    required:[true,"Please add the name"],
+    required:[true,"Please add the Name"],
   },
   email:{
     type:String,
@@ -116,7 +116,7 @@ const inputValuesValidation = (request,response,next) =>{
     }
   } 
 
-// @MailValidation of inputs 
+// @MailValidation
 
   const MailValidation = async (request,response,next)=>{ 
 
