@@ -115,7 +115,8 @@ const inputValuesValidation = (request,response,next) =>{
     }
   } 
 
-// @MailValidation
+// @MailValidation of inputs 
+
   const MailValidation = async (request,response,next)=>{ 
 
     const {email} = request.body;
