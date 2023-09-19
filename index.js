@@ -122,7 +122,7 @@ const inputValuesValidation = (request,response,next) =>{
 
     const isAnyObjectWithThisMail = await usersData.findOne({email})
     
-    // console.log(!isAnyObjectWithThisMail)
+
 
     if ( !isAnyObjectWithThisMail ){
 
