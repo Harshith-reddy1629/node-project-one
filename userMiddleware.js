@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 
 const jwt = require("jsonwebtoken");
 
+const { ObjectId } = require('mongodb');
+
 const getUsers = async (req, res)=>{
   const Q = await usersData.find();
   res.status(200).send(Q)
@@ -23,42 +25,26 @@ const inputValuesValidation = (request,response,next) =>{
   }
 }  
 
-// @PasswordValidation 
+const valuesValidation = async (request,response,next)=>{ 
 
-const PasswordValidation =(request, response, next)=>{
-  const { password} = request.body 
+  const {email,username,password} = request.body;
 
-  if (password.length < 8 ){
-    
-  response.status(400).send({
-      errMsg: 'Password should have minimum 8 characters'
-    })
-    
-  } else{
-    next();
-  }
-} 
-      
-      
-// @MailValidation
-
-const MailValidation = async (request,response,next)=>{ 
-
-  const {email} = request.body;
+  const ValidationErrors = {}
 
   const isAnyObjectWithThisMail = await usersData.findOne({email})
+  const checkUsername = await usersData.findOne({username})
+  const isPasswordLT8 = password.length < 8
+  const isPasswordGT16 = password.length > 16 
 
-  if ( !isAnyObjectWithThisMail ){
-    
+  if (!!isAnyObjectWithThisMail) ValidationErrors.mailError = 'user already exist with this email' 
+  if (!!checkUsername) ValidationErrors.usernameError = 'this username already exists'
+  if (isPasswordLT8)  ValidationErrors.passwordError = 'Password should have minimum 8 characters'
+  if (isPasswordGT16)  ValidationErrors.passwordError = 'max 16 characters are allowed'
+
+  if (!isAnyObjectWithThisMail && !checkUsername && !isPasswordLT8 && !isPasswordGT16 ){
     next()
-    
   }else{
-    
-    response.status(400).send(
-    {
-    errMsg:'email already exists'
-    })
-
+       response.status(400).send(ValidationErrors)
   }
 
 }
@@ -84,7 +70,9 @@ const registeringUser = async(req,res)=>{
     
   }else{
     
-    res.status(400).send({errMsg:'Username already exists'})
+    res.status(400).send({
+      errMsg:'Username already exists'
+    })
 
   }
 }
@@ -132,37 +120,38 @@ const deleteUser = async ( req , res ) => {
   }
 }
 
-const loginUser =async (request, response) => {
-  const { username, password } = request.body;
+const loginUser = async (request, response) => {
+  const { username, password } = request.body; 
+
   try {
     
   const dbUser = await usersData.findOne( {username} )
-  if (dbUser === null) {
-    response.status(400);
-    response.send({errMsg:"Invalid User"});
-  } else {
+if (!dbUser) {
+  response.status(400).send({errMsg:"Invalid Username or password"});
+} else {
+    const {id,name,email } = dbUser
     const isPasswordMatched = await bcrypt.compare(password, dbUser.password); 
     if (isPasswordMatched ) {
       const payload = {
-      username,
+      username,id,name,email
       }
-      const jwtToken = jwt.sign(payload, "MY_SECRET_TOKEN"); 
+      const jwtToken = jwt.sign(payload, process.env.MY_SECRET_TOKEN); 
 
       response.send({ jwtToken });
     } else {
       response.status(400);
-      response.send("Invalid Password");
+      response.send("Invalid Username or Password");
     }
   }} catch (error) {
-    response.status(400).send({errMsg:error})
+    response.status(400).send(error)
   }
 }
 
 
 exports.registeringUser = registeringUser
-exports.MailValidation = MailValidation
+exports.valuesValidation = valuesValidation
 exports.inputValuesValidation = inputValuesValidation
-exports.PasswordValidation = PasswordValidation
+
 exports.getUser = getUser
 exports.deleteUser = deleteUser
 exports.loginUser = loginUser

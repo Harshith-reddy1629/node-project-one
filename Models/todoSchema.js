@@ -1,6 +1,11 @@
 const mongoose = require("mongoose"); 
 
 const todoSchema = mongoose.Schema({
+    userId:{
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "users",
+    },
     task:{
       type:String,
       required:[true,"task is mandatory"],
