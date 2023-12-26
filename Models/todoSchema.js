@@ -1,32 +1,34 @@
-const mongoose = require("mongoose"); 
+const mongoose = require("mongoose");
 
-const todoSchema = mongoose.Schema({
-    userId:{
+const todoSchema = mongoose.Schema(
+  {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: "users",
     },
-    task:{
-      type:String,
-      required:[true,"task is mandatory"],
+    task: {
+      type: String,
+      required: [true, "task is mandatory"],
     },
-    selected:{
-      type:Boolean,
-      required:[true,"---"]
+    selected: {
+      type: Boolean,
+      required: [true, "---"],
     },
-    status:{
-      type:String,
-      required:[true,"progress of task"]
+    status: {
+      type: String,
+      required: [true, "progress of task"],
     },
-    note:{
-      type:String
+    note: {
+      type: String,
+      required: [true, "note"],
     },
-  
-  },{
+  },
+  {
     timestamps: true,
-  })
-  
-  const todoData = mongoose.model("todos",todoSchema)
+  }
+);
 
-  
-  module.exports = todoData
+const todoData = mongoose.model("todos", todoSchema);
+
+module.exports = todoData;

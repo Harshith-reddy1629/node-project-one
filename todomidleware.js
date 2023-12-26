@@ -17,12 +17,7 @@ const getTodoTasks = async (req, res) => {
 exports.getTodoTasks = getTodoTasks;
 
 const createTask = async (req, res) => {
-  const {
-    task,
-    status = "todo",
-    selected = false,
-    note = "Ex: top priority",
-  } = req.body;
+  const { task, status = "todo", selected = false, note = "" } = req.body;
   const { id } = req.user;
 
   try {
@@ -34,6 +29,7 @@ const createTask = async (req, res) => {
         task,
         status,
         selected,
+        note,
       });
 
       res.status(201).send(taskCreated);
