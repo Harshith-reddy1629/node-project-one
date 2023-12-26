@@ -60,6 +60,25 @@ const updateTask = async (req, res) => {
     res.status(400).send({ errMsg: error });
   }
 };
+const getTask = async (req, res) => {
+  // const { task, status = "todo", selected = false, note = "" } = req.body;
+
+  const { id } = req.params;
+
+  try {
+    const taskWithID = await todoData.findById(id);
+
+    if (!taskWithID) {
+      res.status(404).send({ errMsg: "Not Found" });
+    } else {
+      res.status(200).send(taskWithID);
+    }
+  } catch (error) {
+    res.status(404).send({
+      errMsg: `${error}`,
+    });
+  }
+};
 
 const deleteTask = async (req, res) => {
   const { id } = req.params;
@@ -79,6 +98,7 @@ const deleteTask = async (req, res) => {
 };
 
 exports.getTodos = getTodos;
+exports.getTask = getTask;
 exports.createTask = createTask;
 exports.deleteTask = deleteTask;
 exports.updateTask = updateTask;

@@ -30,6 +30,7 @@ const {
   deleteTask,
   getTodoTasks,
   updateTask,
+  getTask,
 } = require("./todomidleware");
 
 const tokenValidators = require("./Validators/tokenValidators");
@@ -62,5 +63,6 @@ app
   .post("/todo/", tokenValidators, createTask);
 app.get("/todo/", tokenValidators, getTodoTasks);
 app
+  .get("/todo/:id", tokenValidators, getTask)
   .delete("/todo/:id", tokenValidators, deleteTask)
   .put("/todo/:id", tokenValidators, updateTask);
