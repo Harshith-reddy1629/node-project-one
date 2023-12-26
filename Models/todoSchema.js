@@ -21,7 +21,7 @@ const todoSchema = mongoose.Schema(
     },
     note: {
       type: String,
-      required: [true, "note"],
+      required: [true, "#note"],
     },
   },
   {

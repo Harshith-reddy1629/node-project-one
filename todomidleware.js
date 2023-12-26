@@ -29,7 +29,7 @@ const createTask = async (req, res) => {
         task,
         status,
         selected,
-        note: "",
+        note: "NOTE",
       });
 
       res.status(201).send(taskCreated);
