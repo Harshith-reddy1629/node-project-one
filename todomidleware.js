@@ -29,12 +29,12 @@ const createTask = async (req, res) => {
         task,
         status,
         selected,
-        note,
+        note: "",
       });
 
       res.status(201).send(taskCreated);
     }
-  } catch {
+  } catch (error) {
     res.status(400).send({ errMsg: error });
   }
 };
