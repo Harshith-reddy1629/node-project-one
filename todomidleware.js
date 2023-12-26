@@ -20,6 +20,8 @@ const createTask = async (req, res) => {
   const { task, status = "todo", selected = false, note = "" } = req.body;
   const { id } = req.user;
 
+  const SampleNotes = ["ex:deadline XX-XX-XX ", "ex: important", "ex: -------"];
+
   try {
     if (!task) {
       res.status(400).send({ errMsg: "Enter your todo task" });
@@ -29,7 +31,7 @@ const createTask = async (req, res) => {
         task,
         status,
         selected,
-        note: "NOTE",
+        note: SampleNotes[Math.floor(Math.random() * 3)],
       });
 
       res.status(201).send(taskCreated);
