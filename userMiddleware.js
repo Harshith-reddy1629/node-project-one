@@ -135,7 +135,7 @@ const loginUser = async (request, response) => {
         response.send({ jwtToken });
       } else {
         response.status(400);
-        response.send("Invalid Username or Password");
+        response.send({ errMsg: "Invalid Username or Password" });
       }
     }
   } catch (error) {
